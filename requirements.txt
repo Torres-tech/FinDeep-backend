@@ -1,0 +1,13 @@
+transformers
+datasets
+torch
+sentence-transformers
+openpyxl
+pandas
+langchain-community
+faiss-cpu
+langchain-text-splitters
+qdrant-client
+
+
+

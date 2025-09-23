@@ -1,0 +1,9 @@
+**/venv
+**/_pycache_
+**/.env
+
+data_setup/sources/FinDeep_Query4.csv
+data_setup/miniLM_embeddings.npy
+
+
+
