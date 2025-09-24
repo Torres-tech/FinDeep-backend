@@ -1,3 +1,4 @@
+python-dotenv
 transformers
 datasets
 torch
@@ -8,6 +9,8 @@ langchain-community
 faiss-cpu
 langchain-text-splitters
 qdrant-client
-
-
-
+langchain
+langchain-community
+langchain-core
+langchain-openai
+langgraph

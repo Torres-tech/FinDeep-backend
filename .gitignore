@@ -1,5 +1,5 @@
 **/venv
-**/_pycache_
+**/__pycache__
 **/.env
 
 data_setup/sources/FinDeep_Query4.csv
