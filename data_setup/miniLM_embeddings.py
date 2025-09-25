@@ -4,7 +4,6 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from qdrant_client.http.models import PointStruct
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -29,6 +28,18 @@ class MiniLM_Embeddings:
         print(f"Using device: {self.__device}")
 
         self.__collection_name = "FinDeep"
+        self.__collection_keys = [
+            "start", 
+            "end", 
+            "value", 
+            "accn", 
+            "fp", 
+            "fy", 
+            "form", 
+            "metric", 
+            "CIK", 
+            "CompanyName"
+        ]
         self.__qdrant_client = QdrantClient(
             url = os.getenv("QDRANT_URL"),
             api_key = os.getenv("QDRANT_API_KEY")
@@ -56,6 +67,13 @@ class MiniLM_Embeddings:
         np.save(self.__save_path, embeddings)
 
     def __data_upload(self):
+        def __create_payload_index(key):
+            self.__qdrant_client.create_payload_index(
+                collection_name = self.__collection_name,
+                field_name = f"metadata.{key}",
+                field_schema = models.PayloadSchemaType.KEYWORD
+            )
+
         # Qdrant collection setup
         try:
             if self.__qdrant_client.get_collection(self.__collection_name):
@@ -69,8 +87,12 @@ class MiniLM_Embeddings:
                 collection_name = self.__collection_name,
                 vectors_config = collection_config
             )
-            print(f"Created collection {self.__collection_name}")
+
+            for key in self.__collection_keys:
+                __create_payload_index(key)
             
+            print(f"Created collection {self.__collection_name}")
+
         # Start uploading
         embeddings_list = np.load(self.__save_path)
         print("Shape of embeddings_list:", embeddings_list.shape)
@@ -80,7 +102,7 @@ class MiniLM_Embeddings:
             vector = embeddings_list[i]
             unique_id = str(datetime.now(pytz.utc))
             hashed_id = str(uuid.uuid5(self.__hashed_namespace, unique_id))
-            points = PointStruct(
+            points = models.PointStruct(
                     id = hashed_id,
                     vector = vector.tolist(),
                     payload = {
@@ -98,11 +120,12 @@ class MiniLM_Embeddings:
         # self.__create_embeddings()
         self.__data_upload()
 
+
 if __name__ == "__main__":
-    Nhi = MiniLM_Embeddings(
+    Executor = MiniLM_Embeddings(
         'sentence-transformers/all-MiniLM-L6-v2',
         'data_setup/sources/FinDeep_data (cleaned).xlsx',
         'data_setup/sources/FinDeep_data (cleaned).csv',
         'data_setup/sources/financial_embeddings.npy'
     )
-    Nhi.executor()
+    Executor.executor()

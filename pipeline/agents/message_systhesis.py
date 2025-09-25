@@ -14,9 +14,12 @@ class MessageSynthesis(Runnable):
         self.__message_synthesis_prompt = MESSAGE_SYNTHESIS_PROMPT
 
     def invoke(self, state:GraphState, config = None):
+        data = []
+        for i in state.retrieved_data:
+            data.append(i.payload["metadata"])
         prompt = self.__message_synthesis_prompt.format(
             user_message = state.user_message,
-            data = state.data_metadata
+            data = data
         )
         response = self.__llm.invoke(prompt)
         state.chat_history.append(HumanMessage(content = state.user_message))

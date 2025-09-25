@@ -7,11 +7,24 @@ load_dotenv()
 import os
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
+from qdrant_client.http import models
 from langchain_core.runnables import Runnable
 
 class QdrantRetrieval(Runnable):
     def __init__(self, embedding_model):
         self.__collection_name = "FinDeep"
+        self.__collection_keys = [
+            "start", 
+            "end", 
+            "value", 
+            "accn", 
+            "fp", 
+            "fy", 
+            "form", 
+            "metric", 
+            "CIK", 
+            "CompanyName"
+        ]
         self.__qdrant_client = QdrantClient(
             url=os.getenv("QDRANT_URL"),
             api_key=os.getenv("QDRANT_API_KEY")
@@ -19,12 +32,32 @@ class QdrantRetrieval(Runnable):
         self.__model = SentenceTransformer(embedding_model)
         self.__qdrant_retrieval_prompt = QDRANT_RETRIEVAL_PROMPT
     
-    def retrieve_query(self, query, top_k: int = 1):
+    def __retrieve_query(self, query, filter_dict: dict, top_k: int = 1000):
         embedded_query = self.__model.encode(query)
+        must_conditions = []
+        for key in self.__collection_keys:
+            if key in filter_dict and filter_dict[key] != "":
+                print (key)
+                must_conditions.append(
+                    models.FieldCondition(
+                        key = f"metadata.{key}",
+                        match = models.MatchValue(value = filter_dict[key])
+                    )
+                )
+
+        query_filter = models.Filter(must = must_conditions) if must_conditions else None
+        # results = self.__qdrant_client.scroll(
+        #     collection_name = self.__collection_name,
+        #     scroll_filter = query_filter,
+        #     with_payload = True,
+        #     with_vectors = False,
+        #     limit = top_k
+        # )
         try:
             results = self.__qdrant_client.search(
                 collection_name = self.__collection_name,
                 query_vector = embedded_query,
+                query_filter = query_filter,
                 limit = top_k,
                 with_payload = True,
                 with_vectors = False
@@ -33,7 +66,7 @@ class QdrantRetrieval(Runnable):
         except Exception as e:
             print(f"[ERROR] From QdrantRetrieval: {e}")
             exit(1)
-    
+
     def invoke(self, state: GraphState, config = None):
         query = self.__qdrant_retrieval_prompt.format(
             start = state.start,
@@ -47,7 +80,20 @@ class QdrantRetrieval(Runnable):
             CIK = state.CIK,
             CompanyName = state.CompanyName
         )
-        response = self.retrieve_query(query)
-        state.data_metadata = response[0].payload["metadata"]
-        state.data_position = str(response[0].payload["position"] + 2)
+        response = self.__retrieve_query(
+            query,
+            dict (
+                start = "",#state.start,
+                end = "",#state.end,
+                value = state.value,
+                accn = state.accn,
+                fp = "", #state.fp,
+                fy = "", #state.fy,
+                form = state.form,
+                metric = state.metric,
+                CIK = state.CIK,
+                CompanyName = state.CompanyName
+            )
+        )
+        state.retrieved_data = response
         return state

@@ -6,8 +6,7 @@ from langgraph.graph.message import add_messages
 class GraphState(BaseModel):
     chat_history: Annotated[List[AnyMessage], add_messages]
     user_message: str = ""
-    data_metadata: Optional[Dict[str, Any]] = None
-    data_position: Optional[str] = None
+    retrieved_data: Optional[List[Any]] = None
     # Financial Schema
     start: Optional[str] = ""
     end: Optional[str] = ""
