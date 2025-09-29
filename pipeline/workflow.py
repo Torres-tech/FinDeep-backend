@@ -10,10 +10,14 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 
 class GraphBuilder:
-    def __init__(self, model_name:str, embedding_model:str):
+    def __init__(
+            self,
+            embedding_model:str,
+            model_name:str
+        ):
         self.builder = StateGraph(GraphState)
-        self.model_name = model_name
         self.embedding_model = embedding_model
+        self.model_name = model_name
 
     def build_graph(self):
         self.message_analysis = MessageAnalysis(model_name = self.model_name)
@@ -33,14 +37,28 @@ class GraphBuilder:
     
 class Graph:
     @staticmethod
-    def compile(model_name:str, embedding_model:str):
-        builder = GraphBuilder(model_name = model_name, embedding_model = embedding_model)
+    def compile(
+        embedding_model:str,
+        model_name:str
+    ):
+        builder = GraphBuilder(
+            embedding_model = embedding_model,
+            model_name = model_name, 
+        )
         memory = MemorySaver()
         return builder.build_graph().compile(checkpointer = memory)
 
-def build_graph(model_name:str, embedding_model:str):
-    graph = Graph.compile(model_name = model_name, embedding_model = embedding_model)
+def build_graph(
+        embedding_model:str,
+        model_name:str, 
+        save_graph:bool = False
+    ):
+    graph = Graph.compile(
+        embedding_model = embedding_model,
+        model_name = model_name
+    )
+    if save_graph:
+        with open("pipeline/assets/chatbot_pipeline.png", "wb") as f:
+            f.write(graph.get_graph().draw_mermaid_png())
+            print ("Image is saved to pipeline/assets/chatbot_pipeline.png")
     return graph
-
-
-

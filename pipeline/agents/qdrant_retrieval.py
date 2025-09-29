@@ -26,8 +26,8 @@ class QdrantRetrieval(Runnable):
             "CompanyName"
         ]
         self.__qdrant_client = QdrantClient(
-            url=os.getenv("QDRANT_URL"),
-            api_key=os.getenv("QDRANT_API_KEY")
+            url = os.getenv("QDRANT_URL"),
+            api_key = os.getenv("QDRANT_API_KEY")
         )
         self.__model = SentenceTransformer(embedding_model)
         self.__qdrant_retrieval_prompt = QDRANT_RETRIEVAL_PROMPT
@@ -36,15 +36,14 @@ class QdrantRetrieval(Runnable):
         embedded_query = self.__model.encode(query)
         must_conditions = []
         for key in self.__collection_keys:
-            if key in filter_dict and filter_dict[key] != "":
-                print (key)
+            if filter_dict[key] != "":
                 must_conditions.append(
                     models.FieldCondition(
                         key = f"metadata.{key}",
                         match = models.MatchValue(value = filter_dict[key])
                     )
                 )
-
+        
         query_filter = models.Filter(must = must_conditions) if must_conditions else None
         # results = self.__qdrant_client.scroll(
         #     collection_name = self.__collection_name,
@@ -77,22 +76,30 @@ class QdrantRetrieval(Runnable):
             fy = state.fy,
             form = state.form,
             metric = state.metric,
-            CIK = state.CIK,
-            CompanyName = state.CompanyName
+            CIK = state.cik,
+            CompanyName = state.companyname
         )
+        
+        def safe_convert(value):
+            try:
+                flag = int(value)
+                return True
+            except:
+                return False
+        
         response = self.__retrieve_query(
             query,
             dict (
-                start = "",#state.start,
-                end = "",#state.end,
-                value = state.value,
+                start = "",
+                end = "",
+                value = int(state.value) if safe_convert(state.value) else "",
                 accn = state.accn,
-                fp = "", #state.fp,
-                fy = "", #state.fy,
+                fp = state.fp,
+                fy = int(state.fy) if safe_convert(state.fy) else "",
                 form = state.form,
                 metric = state.metric,
-                CIK = state.CIK,
-                CompanyName = state.CompanyName
+                CIK = int(state.cik) if safe_convert(state.cik) else "",
+                CompanyName = state.companyname
             )
         )
         state.retrieved_data = response

@@ -13,12 +13,10 @@ class MiniLM_Embeddings:
     def __init__(
             self, 
             embedding_model: str, 
-            xlsx_path: str,
             csv_path: str,
             save_path: str
         ):
         self.__csv_path = csv_path
-        self.__xlsx_path = xlsx_path
         self.__save_path = save_path
         self.__hashed_namespace = uuid.UUID(os.getenv("UUID_NAMESPACE"))
 
@@ -28,17 +26,19 @@ class MiniLM_Embeddings:
         print(f"Using device: {self.__device}")
 
         self.__collection_name = "FinDeep"
-        self.__collection_keys = [
+        self.__collection_keys_str = [
             "start", 
-            "end", 
-            "value", 
+            "end",
             "accn", 
-            "fp", 
-            "fy", 
+            "fp",
             "form", 
-            "metric", 
-            "CIK", 
+            "metric",
             "CompanyName"
+        ]
+        self.__collection_keys_int = [
+            "value",
+            "fy",
+            "CIK"
         ]
         self.__qdrant_client = QdrantClient(
             url = os.getenv("QDRANT_URL"),
@@ -60,18 +60,25 @@ class MiniLM_Embeddings:
                 f"CompanyName:{row['CompanyName']}"
             )
         
-        df = pd.read_excel(self.__xlsx_path)
+        df = pd.read_csv(self.__csv_path)
         df['prompt_text'] = df.apply(create_prompt_text, axis=1)
         documents = df['prompt_text'].tolist()
         embeddings = self.__model.encode(documents)
         np.save(self.__save_path, embeddings)
 
     def __data_upload(self):
-        def __create_payload_index(key):
+        def __create_payload_index_str(key):
             self.__qdrant_client.create_payload_index(
                 collection_name = self.__collection_name,
                 field_name = f"metadata.{key}",
                 field_schema = models.PayloadSchemaType.KEYWORD
+            )
+
+        def __create_payload_index_int(key):
+            self.__qdrant_client.create_payload_index(
+                collection_name = self.__collection_name,
+                field_name = f"metadata.{key}",
+                field_schema = models.PayloadSchemaType.INTEGER
             )
 
         # Qdrant collection setup
@@ -88,8 +95,10 @@ class MiniLM_Embeddings:
                 vectors_config = collection_config
             )
 
-            for key in self.__collection_keys:
-                __create_payload_index(key)
+            for key in self.__collection_keys_str:
+                __create_payload_index_str(key)
+            for key in self.__collection_keys_int:
+                __create_payload_index_int(key)
             
             print(f"Created collection {self.__collection_name}")
 
@@ -117,14 +126,13 @@ class MiniLM_Embeddings:
         self.__qdrant_client.close()
 
     def executor(self):
-        # self.__create_embeddings()
+        self.__create_embeddings()
         self.__data_upload()
 
 
 if __name__ == "__main__":
     Executor = MiniLM_Embeddings(
         'sentence-transformers/all-MiniLM-L6-v2',
-        'data_setup/sources/FinDeep_data (cleaned).xlsx',
         'data_setup/sources/FinDeep_data (cleaned).csv',
         'data_setup/sources/financial_embeddings.npy'
     )

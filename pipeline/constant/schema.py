@@ -16,8 +16,8 @@ class GraphState(BaseModel):
     fy: Optional[str] = ""
     form: Optional[str] = ""
     metric: Optional[str] = ""
-    CIK: Optional[str] = ""
-    CompanyName: Optional[str] = ""
+    cik: Optional[str] = ""
+    companyname: Optional[str] = ""
 
 class FinancialSchema(BaseModel):
     start: str
@@ -28,5 +28,5 @@ class FinancialSchema(BaseModel):
     fy: str
     form: str
     metric: str
-    CIK: str
-    CompanyName: str
+    cik: str
+    companyname: str

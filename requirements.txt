@@ -1,16 +1,25 @@
+# Environment & Configuration
 python-dotenv
+fastapi
+
+# Machine Learning & NLP
+torch
 transformers
 datasets
-torch
 sentence-transformers
-openpyxl
+
+# Data Processing & File Handling
 pandas
-langchain-community
+openpyxl
+
+# Vector Databases
 faiss-cpu
-langchain-text-splitters
 qdrant-client
+
+# LangChain Ecosystem
 langchain
-langchain-community
 langchain-core
+langchain-community
 langchain-openai
-langgraph
+langchain-text-splitters
+langgraph 
